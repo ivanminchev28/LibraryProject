@@ -12,14 +12,13 @@ public class LibraryService {
     }
 
     public void approveReader(int readerId) {
-        for (Reader r : readers) {
-            if (r.getId() == readerId) {
-                r.approve();
-                System.out.println("Reader approved.");
-                return;
-            }
+        Reader reader = findReaderById(readerId);
+        if (reader != null) {
+            reader.approve();
+            System.out.println("Reader approved.");
+        } else {
+            System.out.println("Reader not found.");
         }
-        System.out.println("Reader not found.");
     }
 
     public void addBook(AddBookRequest request) {
@@ -35,7 +34,6 @@ public class LibraryService {
     }
 
     public void borrowBook(BorrowBookRequest request) {
-
         Reader reader = request.getReader();
         Book book = request.getBook();
         BorrowType type = request.getBorrowType();
@@ -58,11 +56,15 @@ public class LibraryService {
         book.borrow();
         reader.getBorrowedBooks().add(book);
 
-        System.out.println("Book borrowed: " + type);
+        // FIX: Create and add a historical tracking record
+        int daysAllowed = (type == BorrowType.READING_ROOM) ? 0 : 14;
+        BorrowRecord record = new BorrowRecord(book, daysAllowed);
+        reader.addBorrowRecord(record);
+
+        System.out.println("Book borrowed successfully under type: " + type);
     }
 
     public void returnBook(ReturnBookRequest request) {
-
         Reader reader = request.getReader();
         Book book = request.getBook();
 
@@ -75,7 +77,6 @@ public class LibraryService {
     }
 
     public void discardBook(DiscardBookRequest request) {
-
         Book book = request.getBook();
 
         if (book.getStatus() == BookStatus.BORROWED) {
@@ -89,16 +90,13 @@ public class LibraryService {
 
     public Reader createReaderProfile(ReaderRegistrationRequest request) {
         request.approve();
-
         Reader reader = new Reader(request.getReaderId(), request.getName());
         readers.add(reader);
-
         System.out.println("Reader profile created.");
         return reader;
     }
 
     public ArchiveNotification checkForArchiving(Book book) {
-
         if (book.getCondition() == BookCondition.DAMAGED) {
             return new ArchiveNotification(book);
         }
@@ -110,12 +108,31 @@ public class LibraryService {
     }
 
     public void checkOverdueBooks(Reader reader) {
+        boolean hasOverdue = false;
         for (BorrowRecord record : reader.getBorrowRecords()) {
             if (record.isOverdue()) {
-                System.out.println("Overdue book: "
-                        + record.getBook() + " | Days: " + record.overdueDays());
+                System.out.println("Overdue book: " + record.getBook() + " | Days: " + record.overdueDays());
                 reader.setRating(UserRating.DISLOYAL);
+                hasOverdue = true;
             }
         }
+        if (!hasOverdue) {
+            System.out.println("No overdue books for reader: " + reader.getName());
+        }
+    }
+
+    // Helper lookups used by the Console Menu
+    public Book findBookByInventoryNumber(int invNum) {
+        return books.stream()
+                .filter(b -> b.getInventoryNumber() == invNum)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Reader findReaderById(int id) {
+        return readers.stream()
+                .filter(r -> r.getId() == id)
+                .findFirst()
+                .orElse(null);
     }
 }

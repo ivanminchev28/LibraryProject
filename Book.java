@@ -4,23 +4,16 @@ public class Book {
     private String title;
     private String author;
     private String genre;
-
     private BookStatus status;
     private BookCondition condition;
     private boolean forReadingRoomOnly;
 
-    public Book(int inventoryNumber,
-                String title,
-                String author,
-                String genre,
-                boolean forReadingRoomOnly) {
-
+    public Book(int inventoryNumber, String title, String author, String genre, boolean forReadingRoomOnly) {
         this.inventoryNumber = inventoryNumber;
         this.title = title;
         this.author = author;
         this.genre = genre;
         this.forReadingRoomOnly = forReadingRoomOnly;
-
         this.status = BookStatus.AVAILABLE;
         this.condition = BookCondition.GOOD;
     }
